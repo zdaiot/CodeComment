@@ -20,7 +20,7 @@ class GraphConvolution(Module):
             self.bias = Parameter(torch.FloatTensor(out_features))
         else:
             self.register_parameter('bias', None)
-        self.reset_parameters()
+        self.reset_parameters() # 初始化参数
 
     def reset_parameters(self):
         stdv = 1. / math.sqrt(self.weight.size(1))
@@ -30,7 +30,7 @@ class GraphConvolution(Module):
 
     def forward(self, input, adj):
         support = torch.mm(input, self.weight)
-        output = torch.spmm(adj, support)
+        output = torch.spmm(adj, support) # 稀疏矩阵相乘
         if self.bias is not None:
             return output + self.bias
         else:

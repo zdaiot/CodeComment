@@ -9,8 +9,8 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-from pygcn.utils import load_data, accuracy
-from pygcn.models import GCN
+from utils import load_data, accuracy
+from models import GCN
 
 # Training settings
 parser = argparse.ArgumentParser()
@@ -34,7 +34,7 @@ args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
 
 np.random.seed(args.seed)
-torch.manual_seed(args.seed)
+torch.manual_seed(args.seed) # 设置随机种子，保证每次运行结果相同
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
 
@@ -63,8 +63,8 @@ def train(epoch):
     t = time.time()
     model.train()
     optimizer.zero_grad()
-    output = model(features, adj)
-    loss_train = F.nll_loss(output[idx_train], labels[idx_train])
+    output = model(features, adj) # 前向传播过程中使用到了所有节点的特征和关系
+    loss_train = F.nll_loss(output[idx_train], labels[idx_train]) # 但是优化的过程中只是用到了下标为idx_train数据的类标
     acc_train = accuracy(output[idx_train], labels[idx_train])
     loss_train.backward()
     optimizer.step()
