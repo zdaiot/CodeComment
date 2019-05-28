@@ -31,7 +31,12 @@ def load_data(path="../data/cora/", dataset="cora"): # path=os.path.join(sys.pat
                                     dtype=np.int32)
     edges = np.array(list(map(idx_map.get, edges_unordered.flatten())),
                      dtype=np.int32).reshape(edges_unordered.shape) # 将cites中文章的编号映射到.content中的真实行
-    # 生成(edges.shape[0],)大小的矩阵，并将第i个值放置到矩阵的edges[:, 0](i), edges[:, 1](i)位置
+    """
+    生成(edges.shape[0],)大小的矩阵，并将第i个值放置到矩阵的edges[:, 0](i), edges[:, 1](i)位置
+    
+    虽然.cites文件中，每一行的链接的方向是从右到左，但是这里是以无向图的形式处理的，也就是说adj为对称矩阵；所以可以使用
+    (edges[:, 0], edges[:, 1])，也可以使用(edges[:, 1], edges[:, 0])
+    """
     adj = sp.coo_matrix((np.ones(edges.shape[0]), (edges[:, 0], edges[:, 1])),
                         shape=(labels.shape[0], labels.shape[0]),
                         dtype=np.float32)
