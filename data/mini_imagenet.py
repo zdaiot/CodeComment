@@ -165,7 +165,7 @@ class MiniImagenet(data.Dataset):
         # Resize images and normalize
         for class_ in data:
             for i in range(len(data[class_])):
-                image2resize = pil_image.fromarray(np.uint8(data[class_][i]))
+                image2resize = pil_image.fromarray(np.uint8(data[class_][i])) # 对于其中的一张图片，尺寸为[height,width,channels]
                 image_resized = image2resize.resize((size[1], size[0]))
                 image_resized = np.array(image_resized, dtype='float32')
 
@@ -175,7 +175,7 @@ class MiniImagenet(data.Dataset):
                 image_resized[1, :, :] -= 115.74  # G
                 image_resized[2, :, :] -= 104.65  # B
                 image_resized /= 127.5
-
+                # image_resized = np.transpose(image_resized, (1, 2, 0))
                 data[class_][i] = image_resized
 
         print("Num classes " + str(len(data)))

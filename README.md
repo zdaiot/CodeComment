@@ -1,6 +1,10 @@
 # Few-Shot Learning with Graph Neural Networks
 Implementation of [Few-Shot Learning with Graph Neural Networks](https://arxiv.org/pdf/1711.04043.pdf) on Python3, Pytorch 0.3.1
 
+## 更新内容
+- 适配Pytorch 1.1.0
+- 添加中文注释，方便自己理解
+- 修改
 
 ## Mini-Imagenet
 

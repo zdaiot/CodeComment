@@ -5,7 +5,7 @@ from torch.autograd import Variable
 
 from models import gnn_iclr
 
-
+# 用于提取图像的特征
 class EmbeddingOmniglot(nn.Module):
     ''' In this network the input image is supposed to be 28x28 '''
 
@@ -16,7 +16,7 @@ class EmbeddingOmniglot(nn.Module):
         self.args = args
 
         # input is 1 x 28 x 28
-        self.conv1 = nn.Conv2d(1, self.nef, 3, padding=1, bias=False)
+        self.conv1 = nn.Conv2d(1, self.nef, 3, padding=1, bias=False) # in_channels, out_channels, kernel_size
         self.bn1 = nn.BatchNorm2d(self.nef)
         # state size. (nef) x 14 x 14
         self.conv2 = nn.Conv2d(self.nef, self.nef, 3, padding=1, bias=False)
@@ -105,10 +105,11 @@ class MetricNN(nn.Module):
         self.metric_network = args.metric_network
         self.emb_size = emb_size
         self.args = args
-
+        # 支持few-shot learning、semi-learning、active learning
+        # 支持mini_imagenet和gnn_iclr_active两种数据集
         if self.metric_network == 'gnn_iclr_nl':
             assert(self.args.train_N_way == self.args.test_N_way)
-            num_inputs = self.emb_size + self.args.train_N_way
+            num_inputs = self.emb_size + self.args.train_N_way # 输入数据的尺寸
             if self.args.dataset == 'mini_imagenet':
                 self.gnn_obj = gnn_iclr.GNN_nl(args, num_inputs, nf=96, J=1)
             elif 'omniglot' in self.args.dataset:
@@ -121,19 +122,25 @@ class MetricNN(nn.Module):
             raise NotImplementedError
 
     def gnn_iclr_forward(self, z, zi_s, labels_yi):
-        # Creating WW matrix
+        # Creating WW matrix；zero_pad为测试样本的类标处理方式，和半监督学习中，额外无标签数据类标处理方式相同；
+        # Variable中requires_grad默认为false；之所以使用Variable，是因为这里的labels_yi大小不定。
+        # 最终得到的维度为[batch_size, n_way]
         zero_pad = Variable(torch.zeros(labels_yi[0].size()))
         if self.args.cuda:
             zero_pad = zero_pad.cuda()
-
+        '''
+        labels_yi得到的新维度为[batch_size, n_way]_{n_way*num_shots+1}；
+        zi_s得到的新维度为[batch_size,emb_size]_{n_ways*num_shots+1}；
+        这两个维度中加一是因为需要将测试样本和训练样本一起加入到拓扑图中，然后使用GNN
+        '''
         labels_yi = [zero_pad] + labels_yi
         zi_s = [z] + zi_s
-
+        # input将特征和类标拼接起来
         nodes = [torch.cat([zi, label_yi], 1) for zi, label_yi in zip(zi_s, labels_yi)]
-        nodes = [node.unsqueeze(1) for node in nodes]
-        nodes = torch.cat(nodes, 1)
+        nodes = [node.unsqueeze(1) for node in nodes] # 得到维度为[batch_size,1,emb_size+n_way]_{n_way*num_shots+1}
+        nodes = torch.cat(nodes, 1) # 得到的维度为[batch_size,n_way*num_shots+1,emb_size+n_way]
 
-        logits = self.gnn_obj(nodes).squeeze(-1)
+        logits = self.gnn_obj(nodes).squeeze(-1) # 调用forword函数。若-1维度不等于1，则squeeze(-1)相当于不起作用
         outputs = F.sigmoid(logits)
 
         return outputs, logits
@@ -166,7 +173,7 @@ class MetricNN(nn.Module):
 
         if 'gnn_iclr_active' in self.metric_network:
            return self.gnn_iclr_active_forward(z, zi_s, labels_yi, oracles_yi, hidden_labels)
-        elif 'gnn_iclr' in self.metric_network:
+        elif 'gnn_iclr' in self.metric_network: # 执行gnn_iclr_forward函数
             return self.gnn_iclr_forward(z, zi_s, labels_yi)
         else:
             raise NotImplementedError
@@ -178,11 +185,12 @@ class SoftmaxModule():
 
     def forward(self, outputs):
         if self.softmax_metric == 'log_softmax':
-            return F.log_softmax(outputs)
+            return F.log_softmax(outputs) # softmax结果上加上log函数，因为交叉熵损失函数通常要取log
         else:
             raise(NotImplementedError)
 
 
+# 若已有模型，则加载模型
 def load_model(model_name, args, io):
     try:
         model = torch.load('checkpoints/%s/models/%s.t7' % (args.exp_name, model_name))

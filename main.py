@@ -14,7 +14,7 @@ import numpy as np
 # Training settings
 parser = argparse.ArgumentParser(description='Few-Shot Learning with Graph Neural Networks')
 parser.add_argument('--exp_name', type=str, default='debug_vx', metavar='N',
-                    help='Name of the experiment')
+                    help='Name of the experiment') # 存放结果的文件夹名字
 parser.add_argument('--batch_size', type=int, default=10, metavar='batch_size',
                     help='Size of batch)')
 parser.add_argument('--batch_size_test', type=int, default=10, metavar='batch_size',
@@ -33,7 +33,7 @@ parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
 parser.add_argument('--log-interval', type=int, default=20, metavar='N',
                     help='how many batches to wait before logging training status')
-parser.add_argument('--save_interval', type=int, default=300000, metavar='N',
+parser.add_argument('--save_interval', type=int, default=5000, metavar='N',
                     help='how many batches between each model saving')
 parser.add_argument('--test_interval', type=int, default=2000, metavar='N',
                     help='how many batches between each test')
@@ -73,7 +73,7 @@ def _init_():
     os.system('cp models/models.py checkpoints' + '/' + args.exp_name + '/' + 'models.py.backup')
 _init_()
 
-io = io_utils.IOStream('checkpoints/' + args.exp_name + '/run.log')
+io = io_utils.IOStream('checkpoints/' + args.exp_name + '/run.log') # 创建日志文件，使用cprint方法将string写入到txt并换行
 io.cprint(str(args))
 
 args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -90,21 +90,21 @@ def train_batch(model, data):
     [batch_x, label_x, batches_xi, labels_yi, oracles_yi, hidden_labels] = data
 
     # Compute embedding from x and xi_s
-    z = enc_nn(batch_x)[-1]
-    zi_s = [enc_nn(batch_xi)[-1] for batch_xi in batches_xi]
+    z = enc_nn(batch_x)[-1] # 得到的维度为[batch_size,emb_size]
+    zi_s = [enc_nn(batch_xi)[-1] for batch_xi in batches_xi] # 得到的维度为[batch_size,emb_size]_{n_ways*num_shots}
 
     # Compute metric from embeddings
-    out_metric, out_logits = metric_nn(inputs=[z, zi_s, labels_yi, oracles_yi, hidden_labels])
-    logsoft_prob = softmax_module.forward(out_logits)
+    out_metric, out_logits = metric_nn(inputs=[z, zi_s, labels_yi, oracles_yi, hidden_labels]) # 调用MetricNN类的forword方法，维度为[batch_size, n_ways]
+    logsoft_prob = softmax_module.forward(out_logits) # 维度为[batch_size, n_ways]
 
     # Loss
     label_x_numpy = label_x.cpu().data.numpy()
     formatted_label_x = np.argmax(label_x_numpy, axis=1)
-    formatted_label_x = Variable(torch.LongTensor(formatted_label_x))
+    formatted_label_x = Variable(torch.LongTensor(formatted_label_x)) # 维度[batch_size]
     if args.cuda:
         formatted_label_x = formatted_label_x.cuda()
-    loss = F.nll_loss(logsoft_prob, formatted_label_x)
-    loss.backward()
+    loss = F.nll_loss(logsoft_prob, formatted_label_x) # torch.nn.CrossEntropyLoss(This criterion combines nn.LogSoftmax() and nn.NLLLoss() in one single class)
+    loss.backward() # 计算loss关于所有权重的梯度
 
     return loss
 
@@ -114,12 +114,12 @@ def train():
     io.cprint('Batch size: '+str(args.batch_size))
 
     #Try to load models
-    enc_nn = models.load_model('enc_nn', args, io)
-    metric_nn = models.load_model('metric_nn', args, io)
-
+    enc_nn = models.load_model('enc_nn', args, io) # 提取数据特征的模型
+    metric_nn = models.load_model('metric_nn', args, io) # GNN
+    # 如果没有权重，则建立新模型
     if enc_nn is None or metric_nn is None:
         enc_nn, metric_nn = models.create_models(args=args)
-    softmax_module = models.SoftmaxModule()
+    softmax_module = models.SoftmaxModule() # softmax模块
 
     if args.cuda:
         enc_nn.cuda()
@@ -151,15 +151,14 @@ def train():
                                            cuda=args.cuda, variable=True)
         [batch_x, label_x, _, _, batches_xi, labels_yi, oracles_yi, hidden_labels] = data
 
-        opt_enc_nn.zero_grad()
+        opt_enc_nn.zero_grad() # 将梯度初始化为零（因为一个batch的loss关于weight的导数是所有sample的loss关于weight的导数的累加和）
         opt_metric_nn.zero_grad()
 
         loss_d_metric = train_batch(model=[enc_nn, metric_nn, softmax_module],
                                     data=[batch_x, label_x, batches_xi, labels_yi, oracles_yi, hidden_labels])
 
-        opt_enc_nn.step()
+        opt_enc_nn.step() # 使用优化算法，根据损失函数关于权重的梯度，更新权重
         opt_metric_nn.step()
-
 
         adjust_learning_rate(optimizers=[opt_enc_nn, opt_metric_nn], lr=args.lr, iter=batch_idx)
 
@@ -167,18 +166,19 @@ def train():
         # Display
         ####################
         counter += 1
-        total_loss += loss_d_metric.data[0]
+        total_loss += loss_d_metric.item()
         if batch_idx % args.log_interval == 0:
                 display_str = 'Train Iter: {}'.format(batch_idx)
                 display_str += '\tLoss_d_metric: {:.6f}'.format(total_loss/counter)
                 io.cprint(display_str)
-                counter = 0
+                counter = 0 # counter和total_loss要同时置零
                 total_loss = 0
 
         ####################
         # Test
         ####################
         if (batch_idx + 1) % args.test_interval == 0 or batch_idx == 20:
+            # 每20次取较小规模的数据测试，每args.test_interval取较大规模的数据测试
             if batch_idx == 20:
                 test_samples = 100
             else:
@@ -187,9 +187,9 @@ def train():
                 val_acc_aux = test.test_one_shot(args, model=[enc_nn, metric_nn, softmax_module],
                                                  test_samples=test_samples*5, partition='val')
             test_acc_aux = test.test_one_shot(args, model=[enc_nn, metric_nn, softmax_module],
-                                              test_samples=test_samples*5, partition='test')
+                                              test_samples=test_samples*5, partition='test') # 使用测试集测试
             test.test_one_shot(args, model=[enc_nn, metric_nn, softmax_module],
-                               test_samples=test_samples, partition='train')
+                               test_samples=test_samples, partition='train') # 使用训练集测试
             enc_nn.train()
             metric_nn.train()
 
