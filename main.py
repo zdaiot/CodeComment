@@ -59,6 +59,10 @@ parser.add_argument('--dataset', type=str, default='mini_imagenet', metavar='N',
                     help='omniglot')
 parser.add_argument('--dec_lr', type=int, default=10000, metavar='N',
                     help='Decreasing the learning rate every x iterations')
+parser.add_argument('--use_resnet', type=bool, default=True,
+                    help='use resnet Embedding')
+parser.add_argument('--resnet_pretrained', type=bool, default=False,
+                    help='use resnet Embedding')
 args = parser.parse_args()
 
 

@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-
+from models.stl10 import stl10
 from models import gnn_iclr
 
 # 用于提取图像的特征
@@ -190,6 +190,40 @@ class SoftmaxModule():
             raise(NotImplementedError)
 
 
+class EmbeddingOmniglotSTL10(nn.Module):
+    def __init__(self, pretrain, emb_size):
+        super(EmbeddingOmniglotSTL10, self).__init__()
+        self.emb_size = emb_size
+        self.model = stl10(n_channel=32, pretrained=pretrain) # first conv channel (default: 32)
+
+        self.num_ftrs = self.model.classifier[0].in_features
+        self.feature = self.model.features
+        self.fc1 = nn.Linear(self.num_ftrs, emb_size)
+    
+    def forward(self, x):
+        x = self.feature(x)
+        x = x.view(x.size(0), -1)
+        x = self.fc1(x)
+        return [x]
+
+
+class EmbeddingImagenetSTL10(nn.Module):
+    def __init__(self, pretrain, emb_size):
+        super(EmbeddingImagenetSTL10, self).__init__()
+        self.emb_size = emb_size
+        self.model = stl10(n_channel=32, pretrained=pretrain) # first conv channel (default: 32)
+
+        self.num_ftrs = self.model.classifier[0].in_features
+        self.feature = self.model.features
+        self.fc1 = nn.Linear(self.num_ftrs, emb_size)
+    
+    def forward(self, x):
+        x = self.feature(x)
+        x = x.view(x.size(0), -1)
+        x = self.fc1(x)
+        return [x]
+
+
 # 若已有模型，则加载模型
 def load_model(model_name, args, io):
     try:
@@ -206,9 +240,20 @@ def create_models(args):
     print (args.dataset)
 
     if 'omniglot' == args.dataset:
-        enc_nn = EmbeddingOmniglot(args, 64)
+        if args.use_resnet:
+            enc_nn = EmbeddingOmniglotSTL10(args.resnet_pretrained, 64)
+        else:
+            enc_nn = EmbeddingOmniglot(args, 64)
     elif 'mini_imagenet' == args.dataset:
-        enc_nn = EmbeddingImagenet(args, 128)
+        if args.use_resnet:
+            enc_nn = EmbeddingImagenetSTL10(args.resnet_pretrained, 128)
+        else:
+            enc_nn = EmbeddingImagenet(args, 128)
     else:
         raise NameError('Dataset ' + args.dataset + ' not knows')
     return enc_nn, MetricNN(args, emb_size=enc_nn.emb_size)
+
+
+if __name__ == "__main__":
+    medel = EmbeddingOmniglotSTL10(True, 64)
+    print(medel)

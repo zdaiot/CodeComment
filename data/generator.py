@@ -24,6 +24,10 @@ class Generator(data.Dataset):
         else:
             self.input_channels = 3
             self.size = (84, 84)
+        # 如果使用resnet作为Embedding部分，则覆盖掉图像输入大小
+        if self.args.use_resnet:
+            self.input_channels = 3 # RGB
+            self.size = (96, 96)
 
         if dataset == 'omniglot':
             self.loader = omniglot.Omniglot(self.root, dataset=dataset)
