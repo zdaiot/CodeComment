@@ -59,9 +59,9 @@ parser.add_argument('--dataset', type=str, default='mini_imagenet', metavar='N',
                     help='omniglot')
 parser.add_argument('--dec_lr', type=int, default=10000, metavar='N',
                     help='Decreasing the learning rate every x iterations')
-parser.add_argument('--use_resnet', type=bool, default=True,
+parser.add_argument('--use_resnet', type=int, default=0,
                     help='use resnet Embedding')
-parser.add_argument('--resnet_pretrained', type=bool, default=False,
+parser.add_argument('--resnet_pretrained', type=int, default=1,
                     help='use resnet Embedding')
 args = parser.parse_args()
 
@@ -132,11 +132,12 @@ def train():
     io.cprint(str(enc_nn))
     io.cprint(str(metric_nn))
 
+    # 设置L2正则化系数
     weight_decay = 0
     if args.dataset == 'mini_imagenet':
-        print('Weight decay '+str(1e-6))
-        weight_decay = 1e-6
-    opt_enc_nn = optim.Adam(enc_nn.parameters(), lr=args.lr, weight_decay=weight_decay)
+        print('Weight decay '+str(1e-5))
+        weight_decay = 1e-5
+    opt_enc_nn = optim.Adam(enc_nn.parameters(), lr=0.00001, weight_decay=weight_decay) # args.lr
     opt_metric_nn = optim.Adam(metric_nn.parameters(), lr=args.lr, weight_decay=weight_decay)
 
     enc_nn.train()
@@ -182,7 +183,7 @@ def train():
         # Test
         ####################
         if (batch_idx + 1) % args.test_interval == 0 or batch_idx == 20:
-            # 每20次取较小规模的数据测试，每args.test_interval取较大规模的数据测试
+            # 在20次时取较小规模的数据测试验证代码是否有问题，每args.test_interval取较大规模的数据测试
             if batch_idx == 20:
                 test_samples = 100
             else:

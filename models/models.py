@@ -62,10 +62,12 @@ class EmbeddingImagenet(nn.Module):
         # Input 84x84x3
         self.conv1 = nn.Conv2d(3, self.ndf, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(self.ndf)
+        self.drop_1 = nn.Dropout2d(0.4)
 
         # Input 42x42x64
         self.conv2 = nn.Conv2d(self.ndf, int(self.ndf*1.5), kernel_size=3, bias=False)
         self.bn2 = nn.BatchNorm2d(int(self.ndf*1.5))
+        self.drop_2 = nn.Dropout2d(0.4)
 
         # Input 20x20x96
         self.conv3 = nn.Conv2d(int(self.ndf*1.5), self.ndf*2, kernel_size=3, padding=1, bias=False)
@@ -84,8 +86,10 @@ class EmbeddingImagenet(nn.Module):
     def forward(self, input):
         e1 = F.max_pool2d(self.bn1(self.conv1(input)), 2)
         x = F.leaky_relu(e1, 0.2, inplace=True)
+        x = self.drop_1(x)
         e2 = F.max_pool2d(self.bn2(self.conv2(x)), 2)
         x = F.leaky_relu(e2, 0.2, inplace=True)
+        x = self.drop_2(x)
         e3 = F.max_pool2d(self.bn3(self.conv3(x)), 2)
         x = F.leaky_relu(e3, 0.2, inplace=True)
         x = self.drop_3(x)
@@ -214,7 +218,7 @@ class EmbeddingImagenetSTL10(nn.Module):
         self.model = stl10(n_channel=32, pretrained=pretrain) # first conv channel (default: 32)
 
         self.num_ftrs = self.model.classifier[0].in_features
-        self.feature = self.model.features
+        self.feature = self.model.features  # [:12]
         self.fc1 = nn.Linear(self.num_ftrs, emb_size)
     
     def forward(self, x):

@@ -39,8 +39,9 @@ def make_layers(cfg, batch_norm=False):
                 layers += [conv2d, nn.BatchNorm2d(out_channels, affine=False), nn.ReLU()]
             else:
                 layers += [conv2d, nn.ReLU()]
-            in_channels = out_channels
+            in_channels = out_channels # 为下一层做准备
     return nn.Sequential(*layers)
+
 
 def stl10(n_channel, pretrained):
     cfg = [
@@ -60,8 +61,9 @@ def stl10(n_channel, pretrained):
         model.load_state_dict(state_dict)
     return model
 
+
 if __name__ == "__main__":
-    model = stl10(n_channel=32) # first conv channel (default: 32)
+    model = stl10(n_channel=32, pretrained=True) # first conv channel (default: 32)
     # model = torch.nn.DataParallel(model, device_ids=range(1))
     model.cuda()
     print(model.features)

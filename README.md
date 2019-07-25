@@ -4,9 +4,10 @@ Implementation of [Few-Shot Learning with Graph Neural Networks](https://arxiv.o
 ## 更新内容
 - 适配Pytorch 1.1.0
 - 添加中文注释，方便自己理解
-- 增加Embedding部分可选为resnet
-- 增加Embedding部分使用resnet时，是否使用在stl10数据集上的预训练权重
+- 增加Embedding部分可选为resnet，传参参数为use_resnet，类型为int。注意bool类型无法使用终端传参
+- 增加Embedding部分使用resnet时，是否使用在stl10数据集上的预训练权重，传承参数为resnet_pretrained，类型为int
 - 增加run.sh文件，可一次性跑两个数据集的5-way，1-shot和5-way，5-shot
+- EmbeddingImagenet类中增加两层dropout放置过拟合
 
 ## Mini-Imagenet
 
