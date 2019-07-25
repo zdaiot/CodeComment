@@ -9,7 +9,7 @@ from torch_geometric.nn import GCNConv, ChebConv  # noqa
 dataset = 'Cora'
 path = osp.join(osp.dirname(osp.realpath(__file__)), '..', 'data', dataset)
 dataset = Planetoid(path, dataset, T.NormalizeFeatures())
-data = dataset[0]
+data = dataset[0] # 调用 InMemoryDataset 类中的 __getitem__ 方法
 
 
 class Net(torch.nn.Module):
@@ -35,7 +35,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
 
 def train():
     model.train()
-    optimizer.zero_grad()
+    optimizer.zero_grad() # loss清零。计算一个batch内的loss之和，计算下一个loss之和的时候，需要重新置零
     F.nll_loss(model()[data.train_mask], data.y[data.train_mask]).backward()
     optimizer.step()
 

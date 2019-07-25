@@ -29,7 +29,7 @@ def remove_self_loops(edge_index, edge_attr=None):
     :rtype: (:class:`LongTensor`, :class:`Tensor`)
     """
     row, col = edge_index
-    mask = row != col
+    mask = row != col # 理解方法 mask = (row != col)
     edge_attr = edge_attr if edge_attr is None else edge_attr[mask]
     edge_index = edge_index[:, mask]
 
@@ -95,10 +95,11 @@ def add_remaining_self_loops(edge_index,
     :rtype: (:class:`LongTensor`, :class:`Tensor`)
     """
     num_nodes = maybe_num_nodes(edge_index, num_nodes)
-    row, col = edge_index
+    row, col = edge_index # 将edge_index第一行赋值给row，第二行赋值给col
 
-    mask = row != col
-    inv_mask = 1 - mask
+    mask = row != col # 理解方法 mask = (row != col)
+    inv_mask = 1 - mask # mask中1变为0，而0变成1，相当于 inv_mask = (row == col)
+    # 生成大小为[numnodes]的tensor，并使用fill_value值进行填充
     loop_weight = torch.full(
         (num_nodes, ),
         fill_value,
@@ -106,15 +107,20 @@ def add_remaining_self_loops(edge_index,
         device=edge_index.device)
 
     if edge_weight is not None:
+        # numel()返回一个tensor变量内所有元素个数
         assert edge_weight.numel() == edge_index.size(1)
+        # 该语句的作用为若原本的edge_index存在自连接，则直接使用原本的自连接权重
         loop_weight[row[inv_mask]] = edge_weight[inv_mask].view(-1)
+        # 这里使用[mask]是为了剔除掉edge_weight中的权重，因为loop_weight中已经包含了所有自连接边的权重了
         edge_weight = torch.cat([edge_weight[mask], loop_weight], dim=0)
 
     loop_index = torch.arange(0,
                               num_nodes,
                               dtype=torch.long,
                               device=row.device)
+    # unsqueeze增加一维，例如[...]变成[[...]]，repeat(2, 1)后变成[[...],[...]]；这里使用该方法表示节点自连接的起点和终点
     loop_index = loop_index.unsqueeze(0).repeat(2, 1)
+    # 这里使用[:, mask]，是为了防止原本edge_index中含有自连接结构，因为loop_index中已经包含了所有的自连接边结构了
     edge_index = torch.cat([edge_index[:, mask], loop_index], dim=1)
-
+    # 返回带有自连接结构的edge_index，和带有自连接权重的edge_weight，两者之间一一对应；且自连接部分均在两者的后端
     return edge_index, edge_weight

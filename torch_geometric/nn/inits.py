@@ -16,7 +16,7 @@ def kaiming_uniform(tensor, fan, a):
 def glorot(tensor):
     stdv = math.sqrt(6.0 / (tensor.size(-2) + tensor.size(-1)))
     if tensor is not None:
-        tensor.data.uniform_(-stdv, stdv)
+        tensor.data.uniform_(-stdv, stdv) # 将tensor用从均匀分布中抽样得到的值填充
 
 
 def zeros(tensor):

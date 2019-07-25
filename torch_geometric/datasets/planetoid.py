@@ -28,7 +28,7 @@ class Planetoid(InMemoryDataset):
 
     def __init__(self, root, name, transform=None, pre_transform=None):
         self.name = name
-        super(Planetoid, self).__init__(root, transform, pre_transform)
+        super(Planetoid, self).__init__(root, transform, pre_transform) # super 调用父类的的方法
         self.data, self.slices = torch.load(self.processed_paths[0])
 
     @property
@@ -40,9 +40,10 @@ class Planetoid(InMemoryDataset):
     def processed_file_names(self):
         return 'data.pt'
 
+    # 子类的方法覆盖了InMemoryDataset中的方法
     def download(self):
         for name in self.raw_file_names:
-            download_url('{}/{}'.format(self.url, name), self.raw_dir)
+            download_url('{}/{}'.format(self.url, name), self.raw_dir) # 下载数据并保存到 self.raw_dir 文件夹中
 
     def process(self):
         data = read_planetoid_data(self.raw_dir, self.name)
@@ -50,5 +51,6 @@ class Planetoid(InMemoryDataset):
         data, slices = self.collate([data])
         torch.save((data, slices), self.processed_paths[0])
 
+    # 重写__repr__，当程序员直接打印该对象时，系统将会输出下面自定义的“自我描述”信息
     def __repr__(self):
         return '{}()'.format(self.name)
