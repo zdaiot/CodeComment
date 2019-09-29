@@ -56,7 +56,7 @@ if __name__ == '__main__':
     if params.dataset in ['omniglot', 'cross_char']:
         assert params.model == 'Conv4' and not params.train_aug ,'omniglot only support Conv4 without augmentation'
         params.model = 'Conv4S'
-
+    # 初始化不同的模型
     if params.method == 'baseline':
         model           = BaselineFinetune( model_dict[params.model], **few_shot_params )
     elif params.method == 'baseline++':
@@ -98,7 +98,7 @@ if __name__ == '__main__':
         checkpoint_dir += '_%dway_%dshot' %( params.train_n_way, params.n_shot)
 
     #modelfile   = get_resume_file(checkpoint_dir)
-
+    # 加载模型参数
     if not params.method in ['baseline', 'baseline++'] : 
         if params.save_iter != -1:
             modelfile   = get_assigned_file(checkpoint_dir,params.save_iter)
@@ -146,7 +146,7 @@ if __name__ == '__main__':
     else:
         novel_file = os.path.join( checkpoint_dir.replace("checkpoints","features"), split_str +".hdf5") #defaut split = novel, but you can also test base or val classes
         cl_data_file = feat_loader.init_loader(novel_file)
-
+        # 迭代，在支撑集上更新参数，在查询集上测试返回精度
         for i in range(iter_num):
             acc = feature_evaluation(cl_data_file, model, n_query = 15, adaptation = params.adaptation, **few_shot_params)
             acc_all.append(acc)

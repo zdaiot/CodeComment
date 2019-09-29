@@ -19,6 +19,7 @@ class SimpleDataset:
         image_path = os.path.join(self.meta['image_names'][i])
         img = Image.open(image_path).convert('RGB')
         img = self.transform(img)
+        # 没有经过 one-hot 编码
         target = self.target_transform(self.meta['image_labels'][i])
         return img, target
 
@@ -30,13 +31,13 @@ class SetDataset:
     def __init__(self, data_file, batch_size, transform):
         with open(data_file, 'r') as f:
             self.meta = json.load(f)
- 
+        # 当前的data_file中有多少类
         self.cl_list = np.unique(self.meta['image_labels']).tolist()
 
         self.sub_meta = {}
         for cl in self.cl_list:
             self.sub_meta[cl] = []
-
+        # sub_meta中存放字典，每一个键值下面存放着所有属于该类的图片
         for x,y in zip(self.meta['image_names'],self.meta['image_labels']):
             self.sub_meta[y].append(x)
 
@@ -45,11 +46,13 @@ class SetDataset:
                                   shuffle = True,
                                   num_workers = 0, #use main thread only or may receive multiple batches
                                   pin_memory = False)        
+        # 每一类均有一个 DataLoader 迭代器，所有的都放在 sub_dataloader list中
         for cl in self.cl_list:
             sub_dataset = SubDataset(self.sub_meta[cl], cl, transform = transform )
             self.sub_dataloader.append( torch.utils.data.DataLoader(sub_dataset, **sub_data_loader_params) )
 
     def __getitem__(self,i):
+        # 返回第 i 类的 DataLoader 下一个batch的数据
         return next(iter(self.sub_dataloader[i]))
 
     def __len__(self):
@@ -84,4 +87,5 @@ class EpisodicBatchSampler(object):
 
     def __iter__(self):
         for i in range(self.n_episodes):
+            # 随机抽取 nway 类
             yield torch.randperm(self.n_classes)[:self.n_way]

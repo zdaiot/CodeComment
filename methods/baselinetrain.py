@@ -11,6 +11,7 @@ class BaselineTrain(nn.Module):
     def __init__(self, model_func, num_class, loss_type = 'softmax'):
         super(BaselineTrain, self).__init__()
         self.feature    = model_func()
+        # baseline和baseline++对应这不同的分类器
         if loss_type == 'softmax':
             self.classifier = nn.Linear(self.feature.final_feat_dim, num_class)
             self.classifier.bias.data.fill_(0)
@@ -18,7 +19,7 @@ class BaselineTrain(nn.Module):
             self.classifier = backbone.distLinear(self.feature.final_feat_dim, num_class)
         self.loss_type = loss_type  #'softmax' #'dist'
         self.num_class = num_class
-        self.loss_fn = nn.CrossEntropyLoss()
+        self.loss_fn = nn.CrossEntropyLoss() # 使用交叉熵
         self.DBval = False; #only set True for CUB dataset, see issue #31
 
     def forward(self,x):

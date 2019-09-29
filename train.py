@@ -68,6 +68,7 @@ if __name__=='__main__':
             image_size = 28
         else:
             image_size = 84
+    # 如果使用resnet的话
     else:
         image_size = 224
 
@@ -76,7 +77,7 @@ if __name__=='__main__':
         params.model = 'Conv4S'
 
     optimization = 'Adam'
-
+    # 若没有指定 stop_epoch，则在这里指定
     if params.stop_epoch == -1: 
         if params.method in ['baseline', 'baseline++'] :
             if params.dataset in ['omniglot', 'cross_char']:
@@ -95,8 +96,9 @@ if __name__=='__main__':
             else:
                 params.stop_epoch = 600 #default
      
-
+    # 如果是baseline或者baseline++方法的话
     if params.method in ['baseline', 'baseline++'] :
+        # base中的全部数据集均参与训练，而val中的全部数据集均参与验证
         base_datamgr    = SimpleDataManager(image_size, batch_size = 16)
         base_loader     = base_datamgr.get_data_loader( base_file , aug = params.train_aug )
         val_datamgr     = SimpleDataManager(image_size, batch_size = 64)
@@ -172,6 +174,7 @@ if __name__=='__main__':
     if params.resume:
         resume_file = get_resume_file(params.checkpoint_dir)
         if resume_file is not None:
+            # 只恢复了epoch和模型参数，没有恢复优化器参数和学习率
             tmp = torch.load(resume_file)
             start_epoch = tmp['epoch']+1
             model.load_state_dict(tmp['state'])

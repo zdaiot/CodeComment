@@ -20,6 +20,7 @@ class TransformLoader:
         if transform_type=='ImageJitter':
             method = add_transforms.ImageJitter( self.jitter_param )
             return method
+        # 等价于transforms.transform_type
         method = getattr(transforms, transform_type)
         if transform_type=='RandomSizedCrop':
             return method(self.image_size) 
@@ -67,6 +68,7 @@ class SetDataManager(DataManager):
         super(SetDataManager, self).__init__()
         self.image_size = image_size
         self.n_way = n_way
+        # batch_size大小，注意在元训练阶段，并没有支撑集和查询集的区别，都会用来训练
         self.batch_size = n_support + n_query
         self.n_eposide = n_eposide
 
@@ -77,6 +79,11 @@ class SetDataManager(DataManager):
         dataset = SetDataset( data_file , self.batch_size, transform )
         sampler = EpisodicBatchSampler(len(dataset), self.n_way, self.n_eposide )  
         data_loader_params = dict(batch_sampler = sampler,  num_workers = 12, pin_memory = True)       
+        # dataset是一个可迭代对象，传入i的时候，返回第i类的DataLoader的 next batch数据
+        # sampler是一个迭代器，每次从当前所有类中随机挑选 nway 类
+        # sampler充当batch_sampler的作用，每次按照将sample中的索引打包，并按照索引从datasets中取数据
+        # 所以每次均会取出 [nways, batchsize, channels, width, height] 维度的数据，例如 torch.Size([5, 21, 3, 84, 84])
+        # 值的注意的是，这里batchsize大小为 n_support + n_query
         data_loader = torch.utils.data.DataLoader(dataset, **data_loader_params)
         return data_loader
 

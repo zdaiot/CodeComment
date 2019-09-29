@@ -37,6 +37,7 @@ class MetaTemplate(nn.Module):
             x           = x.contiguous().view( self.n_way * (self.n_support + self.n_query), *x.size()[2:]) 
             z_all       = self.feature.forward(x)
             z_all       = z_all.view( self.n_way, self.n_support + self.n_query, -1)
+        # 每一类中的前 n_support 个为支撑集，后面的为查询集
         z_support   = z_all[:, :self.n_support]
         z_query     = z_all[:, self.n_support:]
 
@@ -63,7 +64,7 @@ class MetaTemplate(nn.Module):
             loss = self.set_forward_loss( x )
             loss.backward()
             optimizer.step()
-            avg_loss = avg_loss+loss.data[0]
+            avg_loss = avg_loss+loss.item()
 
             if i % print_freq==0:
                 #print(optimizer.state_dict()['param_groups'][0]['lr'])

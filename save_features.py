@@ -16,10 +16,11 @@ from methods.relationnet import RelationNet
 from methods.maml import MAML
 from io_utils import model_dict, parse_args, get_resume_file, get_best_file, get_assigned_file 
 
-
+# 将要测试的数据的特征均存储下来
 def save_features(model, data_loader, outfile ):
     f = h5py.File(outfile, 'w')
-    max_count = len(data_loader)*data_loader.batch_size
+    max_count = len(data_loader)*data_loader.batch_size # 有多少个数据
+    # (max_count, )为创建的shape，第二个维度缺省，而 i 表示为int 类型
     all_labels = f.create_dataset('all_labels',(max_count,), dtype='i')
     all_feats=None
     count=0
@@ -30,11 +31,12 @@ def save_features(model, data_loader, outfile ):
         x_var = Variable(x)
         feats = model(x_var)
         if all_feats is None:
+            # [] + list() 表示两个list 拼接，所以维度为 [max_count, list( feats.size()[1:])]
             all_feats = f.create_dataset('all_feats', [max_count] + list( feats.size()[1:]) , dtype='f')
         all_feats[count:count+feats.size(0)] = feats.data.cpu().numpy()
-        all_labels[count:count+feats.size(0)] = y.cpu().numpy()
+        all_labels[count:count+feats.size(0)] = y.cpu().numpy() # y没有经过one-hot，所以大小为 feats.size(0)
         count = count + feats.size(0)
-
+    # 记录有多少个数据
     count_var = f.create_dataset('count', (1,), dtype='i')
     count_var[0] = count
 
@@ -60,6 +62,7 @@ if __name__ == '__main__':
     if params.dataset == 'cross':
         if split == 'base':
             loadfile = configs.data_dir['miniImagenet'] + 'all.json' 
+        # 此时在MiniImagenet上训练，在CUB数据集上测试
         else:
             loadfile   = configs.data_dir['CUB'] + split +'.json' 
     elif params.dataset == 'cross_char':
@@ -75,14 +78,14 @@ if __name__ == '__main__':
         checkpoint_dir += '_aug'
     if not params.method in ['baseline', 'baseline++'] :
         checkpoint_dir += '_%dway_%dshot' %( params.train_n_way, params.n_shot)
-
+    # 使用的是第 iter 个权重保存 features
     if params.save_iter != -1:
         modelfile   = get_assigned_file(checkpoint_dir,params.save_iter)
 #    elif params.method in ['baseline', 'baseline++'] :
 #        modelfile   = get_resume_file(checkpoint_dir) #comment in 2019/08/03 updates as the validation of baseline/baseline++ is added
     else:
         modelfile   = get_best_file(checkpoint_dir)
-
+    # 保存路径
     if params.save_iter != -1:
         outfile = os.path.join( checkpoint_dir.replace("checkpoints","features"), split + "_" + str(params.save_iter)+ ".hdf5") 
     else:

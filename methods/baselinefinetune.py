@@ -36,6 +36,7 @@ class BaselineFinetune(MetaTemplate):
         loss_function = loss_function.cuda()
         
         batch_size = 4
+        # 在支撑集上训练，在查询集上测试，返回得分
         support_size = self.n_way* self.n_support
         for epoch in range(100):
             rand_id = np.random.permutation(support_size)
