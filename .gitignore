@@ -1,0 +1,9 @@
+.vscode/settings.json
+filelists/CUB/CUB_200_2011/
+filelists/CUB/CUB_200_2011.tar
+filelists/CUB/attributes.txt
+filelists/CUB/base.json
+filelists/CUB/novel.json
+filelists/CUB/val.json
+__pycache__
+.idea
