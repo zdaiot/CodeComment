@@ -38,7 +38,7 @@ torch.manual_seed(args.seed) # 设置随机种子，保证每次运行结果相�
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
 
-# Load data
+# adj: [2708, 2708] 稀疏, features: [2708, 1433], labels: [2708], idx_train: [140], idx_val: [300], idx_test: [1000]
 adj, features, labels, idx_train, idx_val, idx_test = load_data()
 
 # Model and optimizer
@@ -46,8 +46,7 @@ model = GCN(nfeat=features.shape[1],
             nhid=args.hidden,
             nclass=labels.max().item() + 1,
             dropout=args.dropout)
-optimizer = optim.Adam(model.parameters(),
-                       lr=args.lr, weight_decay=args.weight_decay)
+optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
 
 if args.cuda:
     model.cuda()
@@ -63,8 +62,8 @@ def train(epoch):
     t = time.time()
     model.train()
     optimizer.zero_grad()
-    output = model(features, adj) # 前向传播过程中使用到了所有节点的特征和关系
-    loss_train = F.nll_loss(output[idx_train], labels[idx_train]) # 但是优化的过程中只是用到了下标为idx_train数据的类标
+    output = model(features, adj)  # 前向传播过程中使用到了所有节点的特征和关系
+    loss_train = F.nll_loss(output[idx_train], labels[idx_train])  # 但是优化的过程中只是用到了下标为idx_train数据的类标
     acc_train = accuracy(output[idx_train], labels[idx_train])
     loss_train.backward()
     optimizer.step()
@@ -85,7 +84,7 @@ def train(epoch):
           'time: {:.4f}s'.format(time.time() - t))
 
 
-def test():
+def mytest():
     model.eval()
     output = model(features, adj)
     loss_test = F.nll_loss(output[idx_test], labels[idx_test])
@@ -103,4 +102,4 @@ print("Optimization Finished!")
 print("Total time elapsed: {:.4f}s".format(time.time() - t_total))
 
 # Testing
-test()
+mytest()
